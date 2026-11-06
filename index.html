@@ -1,10 +1,15 @@
+Looking at your screenshot and auditing the code from a Senior UI/UX and Frontend Engineering perspective, there are four specific issues that needed fixing:
+ * Typography & Calligraphic Balance (خلـود): In the screenshot, Aref Ruqaa drops the final د below the baseline at an angle, making it look like ر (خلور) and tilting the word off-axis. Switching to Amiri with a single calligraphic kashida elongation (خلـود) gives the د a crisp, flat horizontal base that is unmistakably a Dal, while horizontally balancing the word across both lobes of the heart.
+ * Optical Centering & 3D Lighting Integration: In the screenshot, the text sits too low in the heart and looks like flat white text pasted on top of a 3D surface. The optical center of a heart is higher than its geometric 50% center (padding-bottom: 14%), and the text now uses a warm pearl-ivory gradient with layered crimson/gold depth shadows so it blends into the heart's lighting.
+ * True Right-to-Left Calligraphic Ink Reveal: Because Arabic letters connect, splitting خلود into individual <span> tags breaks the ligatures, while fading the whole word in at once loses the magic of the original letter-by-letter animation. I engineered a smooth right-to-left clip-path ink wipe (1.6s) so her name is "written" across the heart from right to left.
+ * Fixed Broken Heartbeat CSS Bug: In your original CSS, @keyframes halive had filter: drop-shadow(...) scale(1.03). Because scale() belongs in transform rather than filter, the browser invalidated the entire rule and the heart wasn't actually beating. Separating filter and transform restores the 3D heartbeat and glow.
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>For Kholoud 🌹</title>
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@300;400&family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,700;1,700&family=Great+Vibes&family=Cinzel:wght@300;400&family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#080002;cursor:none;font-family:serif;user-select:none;-webkit-user-select:none}
@@ -106,8 +111,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#080002;cursor:none;
 /* BEATING HEART */
 #heartBox{
   position:relative;flex-shrink:0;
-  width:clamp(240px,50vw,400px);
-  height:clamp(240px,50vw,400px);
+  width:clamp(220px,min(48vw,38vh),380px);
+  height:clamp(220px,min(48vw,38vh),380px);
   margin-bottom:20px;
   opacity:0;transform:scale(0.8);
 }
@@ -117,33 +122,79 @@ html,body{width:100%;height:100%;overflow:hidden;background:#080002;cursor:none;
   100%{opacity:1;transform:scale(1)}}
   
 #heartBox.alive{
-  opacity:1; transform:scale(1);
+  opacity:1;
   animation:halive 2.5s ease-in-out infinite;
 }
 @keyframes halive{
-  0%,100%{filter:drop-shadow(0 0 30px rgba(192,57,43,0.4)) scale(1)}
-  50%{filter:drop-shadow(0 0 60px rgba(192,57,43,0.8)) scale(1.03)}}
+  0%,100%{
+    transform:scale(1);
+    filter:drop-shadow(0 0 30px rgba(192,57,43,0.45));
+  }
+  50%{
+    transform:scale(1.035);
+    filter:drop-shadow(0 0 60px rgba(192,57,43,0.85));
+  }
+}
 
 #heartSvg{width:100%;height:100%;display:block}
 
+/* OPTICALLY CENTERED ARABIC CALLIGRAPHY IN HEART */
 #nameBox{
   position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  padding-bottom:10%
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding-bottom:14%;
+  pointer-events:none;
 }
 #nameTxt{
-  font-family:'Great Vibes',cursive;
-  font-size:clamp(45px,9.5vw,90px);
-  color:#fff;
-  text-shadow:0 0 15px rgba(255,182,193,0.8),0 0 40px rgba(192,57,43,0.9);
-  white-space:nowrap;line-height:1
+  font-family:'Amiri',serif;
+  font-weight:700;
+  font-size:clamp(52px,min(11vw,9vh),88px);
+  color:#fffdf9;
+  text-shadow:
+    0 2px 4px rgba(62,0,8,0.65),
+    0 0 18px rgba(255,215,225,0.75),
+    0 0 42px rgba(212,175,55,0.55);
+  white-space:nowrap;
+  line-height:1.15;
+  direction:rtl;
+  padding:0 12px;
 }
-#nameTxt span{
-  display:inline-block;opacity:0;
-  transform:translateY(20px) scale(0.8);
-  transition:opacity 0.6s ease,transform 0.6s cubic-bezier(.34,1.56,.64,1)
+
+/* Smooth Right-to-Left Calligraphic Ink Reveal */
+#nameTxt .arabic-word{
+  display:inline-block;
+  opacity:0;
+  clip-path:inset(-20% 0 -20% 100%);
+  transform:translateY(8px) scale(0.94);
+  filter:blur(4px);
+  transition:
+    clip-path 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.9s ease,
+    transform 1.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1.2s ease;
 }
-#nameTxt span.on{opacity:1;transform:translateY(0) scale(1)}
+#nameTxt .arabic-word.on{
+  opacity:1;
+  clip-path:inset(-20% -15% -20% -15%);
+  transform:translateY(0) scale(1);
+  filter:blur(0);
+}
+
+/* Delicate Gold Calligraphic Swash under خلود */
+#nameSwash{
+  width:clamp(80px,18vw,135px);
+  height:14px;
+  margin-top:-6px;
+  overflow:visible;
+}
+#nameSwash path{
+  stroke-dasharray:200;
+  stroke-dashoffset:200;
+  transition:stroke-dashoffset 1.4s 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#nameSwash.on path{
+  stroke-dashoffset:0;
+}
 
 /* PULSE RINGS */
 .ring{position:absolute;border-radius:50%;border:1px solid rgba(212,175,55,0.2);
@@ -256,6 +307,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#080002;cursor:none;
     </svg>
     <div id="nameBox">
       <div id="nameTxt"></div>
+      <svg id="nameSwash" viewBox="0 0 140 16" fill="none">
+        <path d="M128 5 C95 14, 45 14, 12 5" stroke="rgba(255,240,215,0.75)" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
     </div>
   </div>
 
@@ -564,7 +618,7 @@ function unlock(){
 }
 
 /* ── TEXT REVEAL CHOREOGRAPHY ── */
-const NAME='Kholoud';
+const NAME='خلـود';
 const Q1='Your name means “Eternity”, and that is exactly how long I will love you.';
 const Q2="Before you, I was just counting days. With you, I'm living them.";
 
@@ -572,19 +626,26 @@ function startReveal(){
   const hb=document.getElementById('heartBox');
   hb.classList.add('pop');
   setTimeout(()=>hb.classList.add('alive'), 1500);
-  setTimeout(writeName, 1000);
+  setTimeout(writeName, 950);
 }
 
 function writeName(){
   const el=document.getElementById('nameTxt');
+  const swash=document.getElementById('nameSwash');
   el.innerHTML='';
-  [...NAME].forEach((ch,i)=>{
-    const sp=document.createElement('span');
-    sp.textContent=ch;el.appendChild(sp);
-    setTimeout(()=>sp.classList.add('on'),i*150+100);
+  const sp=document.createElement('span');
+  sp.className='arabic-word';
+  sp.textContent=NAME;
+  el.appendChild(sp);
+
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{
+      sp.classList.add('on');
+      if(swash) swash.classList.add('on');
+    }, 100);
   });
-  const nameMs=NAME.length*150+600;
-  setTimeout(()=>showQ1(),nameMs);
+
+  setTimeout(()=>showQ1(), 1450);
 }
 
 function showQ1(){
@@ -628,3 +689,4 @@ function writeWords(id,text,dir,cb){
 </script>
 </body>
 </html>
+
